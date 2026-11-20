@@ -35,6 +35,7 @@
 
   /* ---------- correo y clave: del link, o los guardados en este aparato ---------- */
   var q = new URLSearchParams(location.search), u = q.get('u'), k = q.get('k');
+  if (u) u = u.split('?')[0]; if (k) k = k.split('?')[0];   // por si el link viene repetido
   if (u && k) { try { localStorage.setItem(KEY, JSON.stringify({ u: u, k: k })); } catch (e) {} }
   else { try { var sv = JSON.parse(localStorage.getItem(KEY) || 'null'); if (sv && sv.u && sv.k) { u = sv.u; k = sv.k; } } catch (e) {} }
   function liveSrc() {
@@ -45,7 +46,7 @@
   /* ---------- manifest + direccion: la app instalada abre ya con tu correo y clave ---------- */
   function conCreds() {   // deja correo y clave en la direccion de arriba: asi "Agregar a pantalla de inicio" guarda el link personal
     try {
-      if (u && k && q.get('u') !== u) {
+      if (u && k && (q.get('u') !== u || q.get('k') !== k)) {
         history.replaceState(null, '', location.pathname + '?u=' + encodeURIComponent(u) + '&k=' + encodeURIComponent(k));
         q = new URLSearchParams(location.search);
       }
