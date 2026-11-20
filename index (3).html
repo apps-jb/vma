@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="google" content="notranslate">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Tickets 811">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#c2570f">
+<title>Tickets 811</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>
+  html, body { margin: 0; height: 100%; background: #fff; }
+  iframe { border: 0; position: fixed; inset: 0; width: 100%; height: 100%; display: block; background: #fff; }
+  #rep { z-index: 5; }
+  #nocopy { display: none; position: fixed; inset: 0; z-index: 6; background: #fbf6f1; color: #2b1d12; font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; align-items: center; justify-content: center; padding: 24px; text-align: center; }
+  #nocopy div { max-width: 340px; }
+  #nocopy button { margin-top: 14px; padding: 12px 22px; font: inherit; font-weight: 700; border: 0; border-radius: 12px; background: #c2570f; color: #fff; }
+</style>
+</head>
+<body>
+<div id="nocopy"><div><b style="font-size:20px">Sin conexi&oacute;n</b><p>Todav&iacute;a no hay datos guardados en este aparato. Abre la app una vez con internet y despu&eacute;s podr&aacute;s verla sin se&ntilde;al.</p><button id="nc_btn">Reintentar</button></div></div>
+
+<!-- Dibuja tu app sin el aviso de Google, la instala como app (PWA) y guarda una copia para verla sin internet.
+     Cambia SOLO la linea que dice APP: pega la URL de tu app (la que termina en /exec). -->
+<script>
+(function () {
+  var APP = 'https://script.google.com/macros/s/AKfycbwC9d4TnOvhwRa03FAzQ-QAeku0LJsW1VJA1PTP2ILdqT2yRwB3O_aCYH0RoZrbPfUr/exec';
+  var OKORG = /^(https:\/\/([a-z0-9-]+\.)*(googleusercontent|google)\.com|null)$/;   // quien puede hablar con esta pagina
+  var KEY = 'v811u';
+
+  /* ---------- correo y clave: del link, o los guardados en este aparato ---------- */
+  var q = new URLSearchParams(location.search), u = q.get('u'), k = q.get('k');
+  if (u && k) { try { localStorage.setItem(KEY, JSON.stringify({ u: u, k: k })); } catch (e) {} }
+  else { try { var sv = JSON.parse(localStorage.getItem(KEY) || 'null'); if (sv && sv.u && sv.k) { u = sv.u; k = sv.k; } } catch (e) {} }
+  function liveSrc() {
+    return APP + '?' + (u && k ? 'u=' + encodeURIComponent(u) + '&k=' + encodeURIComponent(k) + '&' : '') +
+      'w=' + encodeURIComponent(location.origin + location.pathname);
+  }
+
+  /* ---------- manifest: si ya hay correo y clave, la app instalada abre ya con ellos ---------- */
+  try {
+    if (u && k) {
+      var base = location.origin + location.pathname.replace(/[^\/]*$/, '');
+      var man = { name: 'Tickets 811', short_name: 'Tickets 811', lang: 'es', id: base, scope: base,
+        start_url: base + '?u=' + encodeURIComponent(u) + '&k=' + encodeURIComponent(k),
+        display: 'standalone', background_color: '#fbf6f1', theme_color: '#c2570f',
+        icons: [{ src: base + 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+                { src: base + 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' }] };
+      document.querySelector('link[rel=manifest]').href = URL.createObjectURL(new Blob([JSON.stringify(man)], { type: 'application/manifest+json' }));
+    }
+  } catch (e) {}
+
+  /* ---------- service worker: guarda estos archivos para abrir sin senal ---------- */
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').then(function (r) { try { r.update(); } catch (e) {} }).catch(function () {});
+    });
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) navigator.serviceWorker.getRegistration().then(function (r) { if (r) r.update(); }).catch(function () {});
+    });
+  }
+
+  /* ---------- copia local (IndexedDB de esta pagina) ---------- */
+  function idb() {
+    return new Promise(function (ok, no) {
+      var r = indexedDB.open('v811', 1);
+      r.onupgradeneeded = function () { r.result.createObjectStore('k'); };
+      r.onsuccess = function () { ok(r.result); };
+      r.onerror = function () { no(r.error); };
+    });
+  }
+  function op(mode, fn) {
+    return idb().then(function (d) {
+      return new Promise(function (ok, no) {
+        var t = d.transaction('k', mode), res = fn(t.objectStore('k'));
+        t.oncomplete = function () { d.close(); ok(res && res.result !== undefined ? res.result : null); };
+        t.onerror = t.onabort = function () { d.close(); no(t.error); };
+      });
+    });
+  }
+  function put(key, v) { return op('readwrite', function (s) { return s.put(v, key); }); }
+  function get(key) { return op('readonly', function (s) { return s.get(key); }); }
+  function wipe() { return op('readwrite', function (s) { return s.clear(); }); }
+
+  /* ---------- pantallas ---------- */
+  var live = null, rep = null, ready = false, tm = 0, probe = 0, liveT = 0, busy = false;
+  var nocopy = document.getElementById('nocopy');
+
+  function mkLive() {
+    if (live) live.remove();
+    ready = false; liveT = Date.now();
+    live = document.createElement('iframe');
+    live.id = 'live'; live.allow = 'clipboard-write'; live.src = liveSrc();
+    document.body.appendChild(live);
+    clearTimeout(tm);
+    tm = setTimeout(function () { if (!ready) showReplay(); }, navigator.onLine === false ? 50 : 15000);
+  }
+  function showNo() { nocopy.style.display = 'flex'; }
+  function hideNo() { nocopy.style.display = 'none'; }
+  function hideReplay() { if (rep) { rep.remove(); rep = null; } }
+  function stopProbe() { clearInterval(probe); probe = 0; }
+  function startProbe() {
+    if (probe) return;
+    probe = setInterval(function () {
+      if (navigator.onLine === false || Date.now() - liveT < 40000) return;
+      fetch(APP, { mode: 'no-cors', cache: 'no-store' }).then(mkLive).catch(function () {});
+    }, 15000);
+  }
+  function showReplay() {
+    if (rep || busy || ready) return;
+    busy = true;
+    Promise.all([get('html'), get('snap')]).then(function (r) {
+      busy = false;
+      if (ready || rep) return;
+      var html = r[0], snap = r[1], me = (u || '').toLowerCase();
+      if (!html || !snap || !snap.jobs || (snap.who && me && snap.who !== me)) { showNo(); startProbe(); return; }
+      hideNo();
+      rep = document.createElement('iframe');
+      rep.id = 'rep'; rep.allow = 'clipboard-write';
+      rep.srcdoc = html.replace('<head>', function () { return '<head><script>window.__OFFR=1<\/script>'; });
+      document.body.appendChild(rep);
+      startProbe();
+    }).catch(function () { busy = false; showNo(); startProbe(); });
+  }
+
+  /* ---------- mensajes de la app ---------- */
+  var KEYOK = /^(snap|when|pl:[A-Za-z0-9_-]+)$/;
+  window.addEventListener('message', function (e) {
+    var d = e.data;
+    if (!d || typeof d !== 'object' || !d.v811 || !OKORG.test(e.origin)) return;
+    if (d.v811 === 'ready') { ready = true; clearTimeout(tm); hideReplay(); hideNo(); stopProbe(); }
+    else if (d.v811 === 'html' && typeof d.html === 'string') put('html', d.html).catch(function () {});
+    else if (d.v811 === 'put' && KEYOK.test(d.k)) put(d.k, d.v).catch(function () {});
+    else if (d.v811 === 'get' && KEYOK.test(d.k)) {
+      get(d.k).then(function (v) {
+        try { e.source.postMessage({ v811: 'got', id: d.id, v: v === undefined ? null : v }, e.origin === 'null' ? '*' : e.origin); } catch (x) {}
+      }).catch(function () { try { e.source.postMessage({ v811: 'got', id: d.id, v: null }, e.origin === 'null' ? '*' : e.origin); } catch (x) {} });
+    }
+    else if (d.v811 === 'wipe') {                      // cerro sesion: se borra todo lo guardado
+      wipe().catch(function () {}); try { localStorage.removeItem(KEY); } catch (x) {} u = k = null;
+    }
+  });
+
+  window.addEventListener('online', function () { if (!ready || rep) mkLive(); });
+  window.addEventListener('offline', function () { if (!ready) showReplay(); });
+  document.getElementById('nc_btn').addEventListener('click', function () { hideNo(); mkLive(); });
+
+  mkLive();
+})();
+</script>
+</body>
+</html>
