@@ -152,6 +152,12 @@
         try { e.source.postMessage({ v811: 'got', id: d.id, v: v === undefined ? null : v }, e.origin === 'null' ? '*' : e.origin); } catch (x) {}
       }).catch(function () { try { e.source.postMessage({ v811: 'got', id: d.id, v: null }, e.origin === 'null' ? '*' : e.origin); } catch (x) {} });
     }
+    else if (d.v811 === 'geo' && typeof d.id === 'number') {   // ubicacion del aparato (la pide la pagina puente)
+      var back = function (o) { o.v811 = 'geo_r'; o.id = d.id; try { e.source.postMessage(o, e.origin === 'null' ? '*' : e.origin); } catch (x) {} };
+      try { e.source.postMessage({ v811: 'geo_ack', id: d.id }, e.origin === 'null' ? '*' : e.origin); } catch (x) {}
+      if (!navigator.geolocation) back({ ok: false });
+      else navigator.geolocation.getCurrentPosition(function (p) { back({ ok: true, lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy }); }, function () { back({ ok: false }); }, { enableHighAccuracy: true, timeout: 28000, maximumAge: 60000 });
+    }
     else if (d.v811 === 'cred' && typeof d.c === 'string' && typeof d.k === 'string' && d.c && d.k) {   // entro con correo y clave: se guardan
       u = d.c; k = d.k; try { localStorage.setItem(KEY, JSON.stringify({ u: u, k: k })); } catch (x) {}
       conCreds(); setManifest();
