@@ -1,6 +1,6 @@
 /* Service worker de Tickets 811: guarda los archivos de esta pagina para que abra sin senal.
    Si cambias cualquier archivo, sube de numero la version (v811-1 -> v811-3) para forzar la actualizacion. */
-var V = 'v811-5';
+var V = 'v811-6';
 var FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', function (e) {

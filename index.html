@@ -139,11 +139,31 @@
     }).catch(function () { busy = false; showNo(); startProbe(); });
   }
 
+  /* ---------- actualizar la app sin pantalla en blanco: la version nueva carga escondida y se cambia cuando esta lista ---------- */
+  var nl = null, nlT = 0;
+  function swapLive() {
+    if (nl || !live || navigator.onLine === false) return;
+    nl = document.createElement('iframe');
+    nl.id = 'nl'; nl.allow = 'clipboard-write'; nl.src = liveSrc();
+    nl.style.cssText = 'visibility:hidden;z-index:0;pointer-events:none';
+    document.body.insertBefore(nl, live);
+    nlT = setTimeout(function () { if (nl) { nl.remove(); nl = null; } }, 120000);
+  }
+  function swapDone() {
+    clearTimeout(nlT);
+    var old = live; live = nl; nl = null;
+    live.id = 'live'; live.style.cssText = '';
+    if (old) old.remove();
+    ready = true; liveT = Date.now();
+  }
+
   /* ---------- mensajes de la app ---------- */
   var KEYOK = /^(snap|when|pl:[A-Za-z0-9_-]+)$/;
   window.addEventListener('message', function (e) {
     var d = e.data;
     if (!d || typeof d !== 'object' || !d.v811 || !OKORG.test(e.origin)) return;
+    if (d.v811 === 'update') { if (live && e.source === live.contentWindow) swapLive(); return; }
+    if (d.v811 === 'ready' && nl && e.source === nl.contentWindow) { swapDone(); return; }
     if (d.v811 === 'ready') { ready = true; clearTimeout(tm); hideReplay(); hideNo(); stopProbe(); }
     else if (d.v811 === 'html' && typeof d.html === 'string') put('html', d.html).catch(function () {});
     else if (d.v811 === 'put' && KEYOK.test(d.k)) put(d.k, d.v).catch(function () {});
@@ -152,20 +172,11 @@
         try { e.source.postMessage({ v811: 'got', id: d.id, v: v === undefined ? null : v }, e.origin === 'null' ? '*' : e.origin); } catch (x) {}
       }).catch(function () { try { e.source.postMessage({ v811: 'got', id: d.id, v: null }, e.origin === 'null' ? '*' : e.origin); } catch (x) {} });
     }
-    else if (d.v811 === 'share' && typeof d.id === 'number' && d.buf) {   // compartir el PDF (el telefono solo lo permite desde esta pagina)
-      var reS = function (o) { o.v811 = 'share_r'; o.id = d.id; try { e.source.postMessage(o, e.origin === 'null' ? '*' : e.origin); } catch (x) {} };
-      try { e.source.postMessage({ v811: 'share_ack', id: d.id }, e.origin === 'null' ? '*' : e.origin); } catch (x) {}
-      try {
-        var f = new File([d.buf], String(d.name || 'Tickets.pdf').slice(0, 120), { type: 'application/pdf' });
-        if (navigator.canShare && navigator.canShare({ files: [f] })) navigator.share({ files: [f] }).then(function () { reS({ ok: true }); }, function (er) { reS({ ok: false, cancel: !!(er && er.name === 'AbortError') }); });
-        else reS({ ok: false });
-      } catch (x) { reS({ ok: false }); }
-    }
     else if (d.v811 === 'geo' && typeof d.id === 'number') {   // ubicacion del aparato (la pide la pagina puente)
       var back = function (o) { o.v811 = 'geo_r'; o.id = d.id; try { e.source.postMessage(o, e.origin === 'null' ? '*' : e.origin); } catch (x) {} };
       try { e.source.postMessage({ v811: 'geo_ack', id: d.id }, e.origin === 'null' ? '*' : e.origin); } catch (x) {}
       if (!navigator.geolocation) back({ ok: false });
-      else navigator.geolocation.getCurrentPosition(function (p) { back({ ok: true, lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy }); }, function () { back({ ok: false }); }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 });
+      else navigator.geolocation.getCurrentPosition(function (p) { back({ ok: true, lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy }); }, function () { back({ ok: false }); }, { enableHighAccuracy: true, timeout: 28000, maximumAge: 60000 });
     }
     else if (d.v811 === 'cred' && typeof d.c === 'string' && typeof d.k === 'string' && d.c && d.k) {   // entro con correo y clave: se guardan
       u = d.c; k = d.k; try { localStorage.setItem(KEY, JSON.stringify({ u: u, k: k })); } catch (x) {}
