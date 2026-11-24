@@ -44,7 +44,7 @@ Abre la app **Atajos** → **+** (nuevo atajo) → nómbralo **Mi asistente**. A
 4. **Si** *Valor del diccionario* **tiene algún valor** → dentro: **Abrir URL** (con *Valor del diccionario*). → **Fin de Si**.
 5. **Obtener valor del diccionario**: Valor de la clave `respuesta` en *Contenido de la URL*.
 6. **Pronunciar texto**: *Valor del diccionario* (idioma Español).
-7. (Opcional, para que siga la conversación cuando te hace una pregunta) **Obtener valor del diccionario**: clave `seguir` en *Contenido de la URL* → **Si** *Valor* **es** `1`… lo más simple: **Si** *Valor del diccionario* **tiene algún valor** no sirve aquí; usa **Si** *Valor del diccionario* **es** *Verdadero* → **Ejecutar atajo** *Mi asistente* → **Fin de Si**.
+7. (Opcional, para que siga escuchando cuando te hace una pregunta) **Obtener valor del diccionario**: clave `seguir` en *Contenido de la URL* → **Si** *Valor del diccionario* **tiene algún valor** → **Ejecutar atajo** *Mi asistente* → **Fin de Si**.
 
 Listo. Ahora:
 

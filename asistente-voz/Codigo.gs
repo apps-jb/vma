@@ -58,7 +58,7 @@ function conversar_(texto) {
   let hist = [];
   if (/^(nueva conversaci[oó]n|olvida( todo)?|empecemos de nuevo)/i.test(texto)) {
     cache.remove('hist');
-    return { respuesta: 'Listo, empezamos de cero.', abrir: '', seguir: false };
+    return { respuesta: 'Listo, empezamos de cero.', abrir: '', seguir: '' };
   }
   try { hist = JSON.parse(cache.get('hist') || '[]'); } catch (x) { hist = []; }
   hist.push({ role: 'user', parts: [{ text: texto }] });
@@ -89,7 +89,7 @@ function conversar_(texto) {
 
   respuesta = limpiar_(respuesta) || 'Listo.';
   try { cache.put('hist', JSON.stringify(recortar_(hist)), 600); } catch (x) { cache.remove('hist'); }
-  return { respuesta: respuesta, abrir: salida.abrir || '', seguir: /\?\s*$/.test(respuesta) };
+  return { respuesta: respuesta, abrir: salida.abrir || '', seguir: /\?\s*$/.test(respuesta) ? 'si' : '' };
 }
 
 // Guarda solo lo último (10 min de memoria), empezando siempre por algo que dijiste tú.
