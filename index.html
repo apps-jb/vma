@@ -106,7 +106,7 @@
     if (live) live.remove();
     ready = false; liveT = Date.now();
     live = document.createElement('iframe');
-    live.id = 'live'; live.allow = 'clipboard-write'; live.src = liveSrc();
+    live.id = 'live'; live.allow = 'clipboard-write; web-share'; live.src = liveSrc();
     document.body.appendChild(live);
     clearTimeout(tm);
     tm = setTimeout(function () { if (!ready) showReplay(); }, navigator.onLine === false ? 50 : 15000);
@@ -132,7 +132,7 @@
       if (!html || !snap || !snap.jobs || (snap.who && me && snap.who !== me)) { showNo(); startProbe(); return; }
       hideNo();
       rep = document.createElement('iframe');
-      rep.id = 'rep'; rep.allow = 'clipboard-write';
+      rep.id = 'rep'; rep.allow = 'clipboard-write; web-share';
       rep.srcdoc = html.replace('<head>', function () { return '<head><script>window.__OFFR=1<\/script>'; });
       document.body.appendChild(rep);
       startProbe();
@@ -144,7 +144,7 @@
   function swapLive() {
     if (nl || !live || navigator.onLine === false) return;
     nl = document.createElement('iframe');
-    nl.id = 'nl'; nl.allow = 'clipboard-write'; nl.src = liveSrc();
+    nl.id = 'nl'; nl.allow = 'clipboard-write; web-share'; nl.src = liveSrc();
     nl.style.cssText = 'visibility:hidden;z-index:0;pointer-events:none';
     document.body.insertBefore(nl, live);
     nlT = setTimeout(function () { if (nl) { nl.remove(); nl = null; } }, 120000);
@@ -171,6 +171,15 @@
       get(d.k).then(function (v) {
         try { e.source.postMessage({ v811: 'got', id: d.id, v: v === undefined ? null : v }, e.origin === 'null' ? '*' : e.origin); } catch (x) {}
       }).catch(function () { try { e.source.postMessage({ v811: 'got', id: d.id, v: null }, e.origin === 'null' ? '*' : e.origin); } catch (x) {} });
+    }
+    else if (d.v811 === 'share' && typeof d.id === 'number' && d.buf) {   // compartir el PDF con otras apps (desde la pagina principal)
+      var to = e.origin === 'null' ? '*' : e.origin, src = e.source, rr = function (o) { o.v811 = 'share_r'; o.id = d.id; try { src.postMessage(o, to); } catch (x) {} };
+      try { src.postMessage({ v811: 'share_ack', id: d.id }, to); } catch (x) {}
+      try {
+        var fl = new File([d.buf], String(d.name || 'documento.pdf').slice(0, 120), { type: 'application/pdf' });
+        if (navigator.canShare && navigator.canShare({ files: [fl] })) navigator.share({ files: [fl] }).then(function () { rr({ ok: true }); }, function (er) { rr(er && er.name === 'AbortError' ? { cancel: true } : { ok: false }); });
+        else rr({ ok: false });
+      } catch (x) { rr({ ok: false }); }
     }
     else if (d.v811 === 'geo' && typeof d.id === 'number') {   // ubicacion del aparato (la pide la pagina puente)
       var back = function (o) { o.v811 = 'geo_r'; o.id = d.id; try { e.source.postMessage(o, e.origin === 'null' ? '*' : e.origin); } catch (x) {} };
