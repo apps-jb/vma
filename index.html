@@ -106,7 +106,7 @@
     if (live) live.remove();
     ready = false; liveT = Date.now();
     live = document.createElement('iframe');
-    live.id = 'live'; live.allow = 'clipboard-write; web-share'; live.src = liveSrc();
+    live.id = 'live'; live.allow = 'clipboard-write; web-share; screen-wake-lock'; live.src = liveSrc();
     document.body.appendChild(live);
     clearTimeout(tm);
     tm = setTimeout(function () { if (!ready) showReplay(); }, navigator.onLine === false ? 50 : 15000);
@@ -132,7 +132,7 @@
       if (!html || !snap || !snap.jobs || (snap.who && me && snap.who !== me)) { showNo(); startProbe(); return; }
       hideNo();
       rep = document.createElement('iframe');
-      rep.id = 'rep'; rep.allow = 'clipboard-write; web-share';
+      rep.id = 'rep'; rep.allow = 'clipboard-write; web-share; screen-wake-lock';
       rep.srcdoc = html.replace('<head>', function () { return '<head><script>window.__OFFR=1<\/script>'; });
       document.body.appendChild(rep);
       startProbe();
@@ -144,7 +144,7 @@
   function swapLive() {
     if (nl || !live || navigator.onLine === false) return;
     nl = document.createElement('iframe');
-    nl.id = 'nl'; nl.allow = 'clipboard-write; web-share'; nl.src = liveSrc();
+    nl.id = 'nl'; nl.allow = 'clipboard-write; web-share; screen-wake-lock'; nl.src = liveSrc();
     nl.style.cssText = 'visibility:hidden;z-index:0;pointer-events:none';
     document.body.insertBefore(nl, live);
     nlT = setTimeout(function () { if (nl) { nl.remove(); nl = null; } }, 120000);
